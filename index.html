@@ -1,0 +1,294 @@
+<!doctype html>
+<html lang="no">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Beslutningsautomaten</title>
+<meta name="description" content="Strever du mellom to alternativer? Beslutningsautomaten veier dem nøye og fatter beslutningen på dine vegne.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{--bg:#F5F4F0;--ink:#1C1C1A;--muted:#5E5D58;--line:#D6D4CC;--field:#BEBBB1;--error:#8C2F1B}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:'IBM Plex Sans',system-ui,sans-serif}
+  a{color:var(--ink)}a:hover{color:var(--muted)}
+  .page{min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:48px 24px 40px}
+  .wrap{width:100%;max-width:640px}
+  .mono{font-family:'IBM Plex Mono',monospace;font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+  header{display:flex;justify-content:space-between;align-items:baseline;gap:16px;flex-wrap:wrap;border-bottom:1px solid var(--line);padding-bottom:14px}
+  header strong{color:var(--ink);font-weight:500}
+  main{flex-grow:1;display:flex;flex-direction:column;justify-content:center;padding:64px 0}
+  section{display:flex;flex-direction:column}
+  [hidden]{display:none!important}
+  h1{margin:0;font-size:40px;line-height:1.15;font-weight:600;letter-spacing:-.01em}
+  .lede{margin:0;font-size:18px;line-height:1.5;color:var(--muted)}
+  .field{display:flex;flex-direction:column;gap:8px}
+  input{width:100%;height:56px;padding:0 16px;font:inherit;font-size:18px;color:var(--ink);background:#fff;border:1px solid var(--field);border-radius:4px}
+  input::placeholder{color:#8A8880}
+  input:focus{outline:2px solid var(--ink);outline-offset:2px}
+  .or{display:flex;align-items:center;gap:16px;margin:-12px 0}
+  .or::before,.or::after{content:"";flex-grow:1;height:1px;background:var(--line)}
+  button{font:inherit;cursor:pointer;border-radius:4px}
+  button:focus-visible{outline:2px solid var(--ink);outline-offset:3px}
+  .primary{height:56px;padding:0 32px;font-size:18px;font-weight:500;color:#fff;background:var(--ink);border:none}
+  .secondary{height:48px;padding:0 24px;font-size:16px;font-weight:500;color:var(--ink);background:transparent;border:1px solid var(--ink)}
+  .error{margin:0;font-size:15px;color:var(--error)}
+  .working{align-items:center;gap:28px;text-align:center;padding:40px 0}
+  .status{margin:0;font-size:22px;line-height:1.4}
+  .chosen{font-size:44px;overflow-wrap:anywhere}
+  .reason{gap:14px;padding:32px 32px 36px;background:#fff;border:1px solid var(--line);border-radius:4px}
+  .reason p:last-child{margin:0;font-size:30px;line-height:1.35;font-weight:500;letter-spacing:-.005em;text-wrap:balance}
+  footer{border-top:1px solid var(--line);padding-top:16px;display:flex;flex-direction:column;gap:8px;font-size:15px;line-height:1.5}
+  footer small{font-size:13px;color:var(--muted)}
+  @keyframes hg-flip{0%,75%{transform:rotate(0)}100%{transform:rotate(180deg)}}
+  .hg{animation:hg-flip 1.6s ease-in-out infinite;transform-origin:50% 50%}
+  @keyframes blink{0%,100%{opacity:1}50%{opacity:.25}}
+  .blink{animation:blink 1.2s steps(2,start) infinite}
+  @keyframes reveal{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+  .reveal{opacity:0;animation:reveal .5s ease-out .9s forwards}
+  .reveal-late{opacity:0;animation:reveal .5s ease-out 1.6s forwards}
+  @media (max-width:520px){h1{font-size:32px}.chosen{font-size:34px}.reason{padding:24px}.reason p:last-child{font-size:24px}}
+  @media (prefers-reduced-motion:reduce){.hg,.blink{animation:none}.reveal,.reveal-late{animation:none;opacity:1}}
+</style>
+</head>
+<body>
+<div class="page">
+  <header class="wrap mono">
+    <strong>Beslutningsautomaten</strong>
+    <span>Modell 2 · Kalibrert for to alternativer</span>
+  </header>
+
+  <main class="wrap">
+    <section id="step-input" style="gap:32px">
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <h1>Beslutningsvegring?</h1>
+        <p class="lede">Skriv inn alternativene du strever med. Automaten veier dem nøye og fatter beslutningen på dine vegne.</p>
+      </div>
+      <div class="field">
+        <label class="mono" for="altA">Alternativ A</label>
+        <input id="altA" type="text" maxlength="120" placeholder="F.eks. Takke ja til jobben" autocomplete="off">
+      </div>
+      <div class="or mono">eller</div>
+      <div class="field">
+        <label class="mono" for="altB">Alternativ B</label>
+        <input id="altB" type="text" maxlength="120" placeholder="F.eks. Bli der jeg er" autocomplete="off">
+      </div>
+      <div style="display:flex;flex-direction:column;gap:12px;align-items:flex-start">
+        <button id="decide" class="primary" type="button">Gjør mitt valg</button>
+        <p id="error" class="error" role="alert" hidden></p>
+      </div>
+    </section>
+
+    <section id="step-working" class="working" aria-live="polite" hidden>
+      <svg class="hg" width="72" height="96" viewBox="0 0 72 96" fill="none" stroke="#1C1C1A" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <line x1="10" y1="4" x2="62" y2="4"/>
+        <line x1="10" y1="92" x2="62" y2="92"/>
+        <path d="M16 4 C16 30 32 38 36 48 C40 38 56 30 56 4"/>
+        <path d="M16 92 C16 66 32 58 36 48 C40 58 56 66 56 92"/>
+        <path d="M24 84 C28 74 33 70 36 66 C39 70 44 74 48 84 Z" fill="#1C1C1A" stroke="none"/>
+        <line x1="36" y1="50" x2="36" y2="64" stroke-width="1.5"/>
+      </svg>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <p class="mono" style="margin:0">Behandler · trinn <span id="stepNo">1</span> av 4</p>
+        <p class="status"><span id="statusText"></span><span class="blink">…</span></p>
+      </div>
+    </section>
+
+    <section id="step-done" aria-live="polite" style="gap:28px" hidden>
+      <p class="mono" style="margin:0">Beslutning fattet · Saksnr. <span id="caseNo"></span></p>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <p style="margin:0;font-size:20px;color:var(--muted)">Du valgte</p>
+        <h1 id="chosen" class="chosen"></h1>
+      </div>
+      <div id="reason" class="reason">
+        <p class="mono" style="margin:0">Begrunnelse</p>
+        <p id="line"></p>
+      </div>
+      <p id="rejectedRow" style="margin:0;font-size:15px;color:var(--muted)">Valgt bort: <span id="rejected"></span></p>
+      <div style="display:flex;flex-wrap:wrap;align-items:center;gap:16px 24px">
+        <button id="reset" class="secondary" type="button">Ta et nytt valg</button>
+        <span style="font-size:14px;color:var(--muted)">Automaten behandler ikke klager.</span>
+      </div>
+    </section>
+  </main>
+
+  <footer class="wrap">
+    <a href="om.html">Hvorfor det ofte er bedre å bestemme seg enn å la være →</a>
+    <small>Automaten tar ikke hensyn til konsekvenser og påtar seg intet ansvar for dem.</small>
+  </footer>
+</div>
+
+<script>
+const STEPS = [
+  'Leser inn alternativene',
+  'Veier fordeler mot ulemper',
+  'Konsulterer relevant litteratur',
+  'Kontrollerer for etterpåklokskap'
+];
+
+const LINES = [
+  "Et velbegrunnet valg, selv om begrunnelsen foreløpig er ukjent for deg.",
+  "Beslutningen er fattet. Du kan legge fra deg grublingen.",
+  "Et valg som tåler både fagfellevurdering og familiemiddag.",
+  "Historien vil dømme dette valget mildt.",
+  "Valget er tatt. Resten er gjennomføring.",
+  "Ditt fremtidige jeg sender sine hilsener.",
+  "Et nøkternt og fullt ut forsvarlig valg.",
+  "Valget bærer preg av moden dømmekraft.",
+  "Tvilen hadde sin tid. Den er nå over.",
+  "Du har nå frigjort kapasitet til viktigere spørsmål.",
+  "Valget er formelt korrekt og praktisk gjennomførbart.",
+  "Det beste valget er ofte det som faktisk blir tatt. Dette ble tatt.",
+  "Etter grundig behandling: Ja. Dette.",
+  "Et valg du kan forklare for både sjefen og bestemoren din.",
+  "Dette valget vil eldes med verdighet.",
+  "Et prinsipielt riktig valg.",
+  "Automaten har sjelden sett en klarere beslutning.",
+  "Ingen innvendinger fra komiteen.",
+  "Valget er arkivert under «Gode beslutninger».",
+  "Det andre alternativet takker for seg og ønsker deg lykke til.",
+  "Du har valgt – og det er i seg selv en prestasjon.",
+  "Et valg med solid empirisk magefølelse i ryggen.",
+  "Dette er et valg du kan sove godt på.",
+  "Fornuften og intuisjonen er for en gangs skyld enige.",
+  "Et valg det står respekt av.",
+  "Konklusjon: Gå videre. Du har gjort ditt.",
+  "Et valg som vil fremstå åpenbart i ettertid.",
+  "Beslutningsvegring er herved avverget.",
+  "Et sindig valg, truffet i rett øyeblikk.",
+  "Dette valget krever ingen fotnote.",
+  "Den faglige konsensus heller i din retning.",
+  "Et valg i tråd med god praksis.",
+  "Du valgte med hodet, og hjertet har ingen merknader.",
+  "Et utmerket valg. Notér deg datoen.",
+  "Saken anses som avsluttet.",
+  "Valget er fattet i henhold til gjeldende rutiner.",
+  "Et valg av den sorten man senere omtaler som «selvsagt».",
+  "Automaten har vurdert saken og finner ingen grunn til omgjøring.",
+  "Valget er i samsvar med beste tilgjengelige skjønn.",
+  "Et valg med høy indre logikk og akseptabel ytre logikk.",
+  "Det foreligger ingen formildende omstendigheter. Valget står.",
+  "Valget er herved stemplet og kontrasignert.",
+  "Du kan nå slutte å lage lister over fordeler og ulemper.",
+  "Et valg som ville blitt godkjent med små merknader.",
+  "Valget er robust overfor de fleste tenkelige innvendinger.",
+  "Dette er hva man på fagspråket kaller en beslutning.",
+  "Ingen dissens i panelet.",
+  "Valget er truffet med en presisjon som overrasker selv automaten.",
+  "Et valg i beste skandinaviske tradisjon: fornuftig og uten oppstyr.",
+  "Valget har passert alle relevante kontrollpunkter.",
+  "Gjennomtenkt nok. Det er mer enn de fleste kan si.",
+  "Dette valget blir ikke gjenstand for videre utredning.",
+  "Et valg som fortjener en plass i lærebøkene. Kanskje i en fotnote.",
+  "Den alternative virkeligheten er herved nedlagt.",
+  "Et valg som gjør seg godt i et referat.",
+  "Valget har en tydelig retning og et rimelig mål.",
+  "Et valg man kan nikke anerkjennende til over en kopp kaffe.",
+  "Du har valgt. Grublingen er overført til arkivet.",
+  "Valget hviler på et solid fundament av sannsynlighet.",
+  "Et valg som verken er forhastet eller unødig utsatt.",
+  "Det er sjelden et valg er så lite kontroversielt.",
+  "Saken er ferdigbehandlet og sendt på høring hos ingen.",
+  "Et ryddig valg. Automaten setter pris på orden.",
+  "Dette valget har alle forutsetninger for å lykkes.",
+  "Et valg som tåler dagslys.",
+  "Tvil er en dyd. Men ikke i det uendelige.",
+  "Et valg truffet uten unødvendig dramatikk.",
+  "Valget er gyldig fra og med nå.",
+  "Du er herved løst fra pliktfølelsen til å tenke mer på dette.",
+  "Et valg med lav risiko for anger og høy grad av fremdrift.",
+  "Et skoleeksempel på handlekraft.",
+  "Valget er i tråd med naturens orden, slik automaten forstår den.",
+  "Et valg som vil gjøre dine foreldre stolte.",
+  "Det er truffet en beslutning. Det er mer enn de fleste møter klarer.",
+  "Et valg som kan forsvares i ethvert middagsselskap.",
+  "Valget bidrar vesentlig til din livskvalitet, om enn ikke målbart.",
+  "Du har vist beslutningsevne av høy klasse.",
+  "Valget ditt vil stå i fremtidens historiebøker.",
+  "Et valg som harmonerer med det meste.",
+  "Automaten har ingen ytterligere spørsmål.",
+  "Valget er kvalitetssikret, i den grad noe er det.",
+  "Et valg som peker fremover. Det er den riktige retningen.",
+  "Et elegant valg. Nesten for elegant.",
+  "En beslutning i verdensklasse.",
+  "Det ble som det skulle bli.",
+  "Et valg som etterlater god plass til neste valg.",
+  "Valget er vurdert som fullt ut tilfredsstillende.",
+  "Et velfungerende valg. Ingen deler må skiftes ut.",
+  "Det andre alternativet har tatt nederlaget med fatning.",
+  "Du har satt punktum. Et undervurdert tegn.",
+  "Valget er tatt til etterretning.",
+  "Et valg som vil overleve sitt første møte med virkeligheten.",
+  "Dette valget er fritt for unødvendige komplikasjoner.",
+  "Aristoteles ville neppe ha protestert.",
+  "Valget er truffet i fullt alvor og med et lite smil.",
+  "Et valg som tåler å bli fortalt videre.",
+  "Utvalget har konkludert.",
+  "Dette valget vil få deg opp på hesten igjen."
+];
+
+const $ = (id) => document.getElementById(id);
+const steps = { input: $('step-input'), working: $('step-working'), done: $('step-done') };
+let timers = [];
+
+function show(name) {
+  Object.entries(steps).forEach(([k, el]) => { el.hidden = k !== name; });
+}
+
+function restartAnimation(el, cls) {
+  el.classList.remove(cls);
+  void el.offsetWidth;
+  el.classList.add(cls);
+}
+
+function setStep(i) {
+  $('stepNo').textContent = i + 1;
+  $('statusText').textContent = STEPS[i];
+}
+
+function decide() {
+  const a = $('altA').value.trim();
+  const b = $('altB').value.trim();
+  if (!a || !b) {
+    $('error').textContent = 'Automaten trenger to alternativer for å kunne gjøre jobben sin.';
+    $('error').hidden = false;
+    return;
+  }
+  $('error').hidden = true;
+  timers.forEach(clearTimeout);
+  timers = [];
+  setStep(0);
+  show('working');
+  [1, 2, 3].forEach((i) => timers.push(setTimeout(() => setStep(i), i * 950)));
+  timers.push(setTimeout(() => {
+    const pickA = Math.random() < 0.5;
+    $('chosen').textContent = pickA ? a : b;
+    $('rejected').textContent = pickA ? b : a;
+    $('line').textContent = LINES[Math.floor(Math.random() * LINES.length)];
+    $('caseNo').textContent = new Date().getFullYear() + '/' + (Math.floor(Math.random() * 90000) + 10000);
+    restartAnimation($('reason'), 'reveal');
+    restartAnimation($('rejectedRow'), 'reveal-late');
+    show('done');
+    $('reset').focus({ preventScroll: true });
+  }, 4 * 950));
+}
+
+function reset() {
+  timers.forEach(clearTimeout);
+  timers = [];
+  $('altA').value = '';
+  $('altB').value = '';
+  show('input');
+  $('altA').focus();
+}
+
+$('decide').addEventListener('click', decide);
+$('reset').addEventListener('click', reset);
+['altA', 'altB'].forEach((id) => {
+  $(id).addEventListener('keydown', (e) => { if (e.key === 'Enter') decide(); });
+  $(id).addEventListener('input', () => { $('error').hidden = true; });
+});
+</script>
+</body>
+</html>
