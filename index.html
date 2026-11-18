@@ -36,7 +36,7 @@
   .error{margin:0;font-size:15px;color:var(--error)}
   .working{align-items:center;gap:28px;text-align:center;padding:40px 0}
   .status{margin:0;font-size:22px;line-height:1.4}
-  .chosen{font-size:44px;overflow-wrap:anywhere}
+  .chosen{margin:0;font-size:44px;line-height:1.15;font-weight:600;letter-spacing:-.01em;overflow-wrap:anywhere}
   .reason{gap:14px;padding:32px 32px 36px;background:#fff;border:1px solid var(--line);border-radius:4px}
   .reason p:last-child{margin:0;font-size:30px;line-height:1.35;font-weight:500;letter-spacing:-.005em;text-wrap:balance}
   footer{border-top:1px solid var(--line);padding-top:16px;display:flex;flex-direction:column;gap:8px;font-size:15px;line-height:1.5}
@@ -54,17 +54,13 @@
 </head>
 <body>
 <div class="page">
-  <header class="wrap mono">
-    <strong>Beslutningsautomaten</strong>
-    <span>Modell 2 · Kalibrert for to alternativer</span>
+  <header class="wrap">
+    <h1>Beslutningsautomaten</h1>
   </header>
 
-  <main class="wrap">
+  <main class="wrap" style="justify-content:flex-start;padding:20px 0 64px">
     <section id="step-input" style="gap:32px">
-      <div style="display:flex;flex-direction:column;gap:12px">
-        <h1>Beslutningsvegring?</h1>
-        <p class="lede">Skriv inn alternativene du strever med. Automaten veier dem nøye og fatter beslutningen på dine vegne.</p>
-      </div>
+      <p class="lede">Skriv inn alternativene du strever med. Automaten veier dem nøye og fatter beslutningen på dine vegne.</p>
       <div class="field">
         <label class="mono" for="altA">Alternativ A</label>
         <input id="altA" type="text" maxlength="120" placeholder="F.eks. Takke ja til jobben" autocomplete="off">
@@ -99,7 +95,7 @@
       <p class="mono" style="margin:0">Beslutning fattet · Saksnr. <span id="caseNo"></span></p>
       <div style="display:flex;flex-direction:column;gap:6px">
         <p style="margin:0;font-size:20px;color:var(--muted)">Du valgte</p>
-        <h1 id="chosen" class="chosen"></h1>
+        <h2 id="chosen" class="chosen"></h2>
       </div>
       <div id="reason" class="reason">
         <p class="mono" style="margin:0">Begrunnelse</p>
@@ -222,7 +218,6 @@ const LINES = [
   "Et valg som vil overleve sitt første møte med virkeligheten.",
   "Dette valget er fritt for unødvendige komplikasjoner.",
   "Aristoteles ville neppe ha protestert.",
-  "Valget er truffet i fullt alvor og med et lite smil.",
   "Et valg som tåler å bli fortalt videre.",
   "Utvalget har konkludert.",
   "Dette valget vil få deg opp på hesten igjen."
